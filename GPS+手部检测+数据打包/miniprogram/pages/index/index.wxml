@@ -1,0 +1,157 @@
+<view class="container">
+  <view class="header">
+    <text class="title">手语翻译系统</text>
+    <view class="status-badge {{isConnected ? 'connected' : 'disconnected'}}">
+      <text>{{isConnected ? '已连接' : '未连接'}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">手语识别结果</text>
+    </view>
+    <view class="card-body">
+      <view class="gesture-display">
+        <text class="gesture-text">{{gestureText || '等待识别...'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">手性 (handedness):</text>
+        <text class="info-value">{{handedness || '--'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">帧率 fps:</text>
+        <text class="info-value">{{handFps || '--'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">双手数组:</text>
+        <text class="info-value">{{handsCount}} 只 · {{handsSummary}}</text>
+      </view>
+      <view wx:if="{{warningMessage}}" class="warning-box">
+        <text class="warning-icon">⚠️</text>
+        <text class="warning-text">{{warningMessage}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">本机 GPS（手机）</text>
+    </view>
+    <view class="card-body">
+      <view class="info-row note-row">
+        <text class="info-label">定位方式:</text>
+        <text class="info-value note-text">{{locationApiNote}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">纬度:</text>
+        <text class="info-value">{{phoneGps.latitude || '--'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">经度:</text>
+        <text class="info-value">{{phoneGps.longitude || '--'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">精度(m):</text>
+        <text class="info-value">{{phoneGps.accuracy || '--'}}</text>
+      </view>
+      <view wx:if="{{phoneGps.errMsg}}" class="warning-box">
+        <text class="warning-text">{{phoneGps.errMsg}}</text>
+      </view>
+      <button class="btn btn-outline narrow-btn" bindtap="refreshPhoneLocationTap">刷新本机定位</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">设备 GPS（ESP32 模块）</text>
+    </view>
+    <view class="card-body">
+      <view class="info-row">
+        <text class="info-label">纬度:</text>
+        <text class="info-value">{{gpsData.latitude || '--'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">经度:</text>
+        <text class="info-value">{{gpsData.longitude || '--'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">海拔:</text>
+        <text class="info-value">{{gpsData.altitude ? gpsData.altitude + 'm' : '--'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">速度:</text>
+        <text class="info-value">{{gpsData.speed ? gpsData.speed + 'km/h' : '--'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">蓝牙（{{bleStatus}}）</text>
+    </view>
+    <view class="card-body">
+      <view class="info-row note-row">
+        <text class="info-label">外设名称:</text>
+        <text class="info-value">ESP32-S3-CAM</text>
+      </view>
+      <view class="info-row note-row">
+        <text class="info-label">服务/特征:</text>
+        <text class="info-value note-text">FFE0 / FFE1</text>
+      </view>
+      <view class="info-row">
+        <text class="info-label">发送队列:</text>
+        <text class="info-value">{{bleSendQueueLen}} 条（缓存）</text>
+      </view>
+      <view wx:if="{{bleLastRecv}}" class="info-row">
+        <text class="info-label">最近接收:</text>
+        <text class="info-value note-text">{{bleLastRecv}}</text>
+      </view>
+      <view wx:if="{{bleRecvList.length}}" class="recv-cache">
+        <text class="info-label">接收缓存:</text>
+        <view wx:for="{{bleRecvList}}" wx:for-item="item" wx:for-index="idx" wx:key="idx" class="recv-line">
+          <text class="info-value note-text">{{item.data}}</text>
+        </view>
+      </view>
+      <view class="ble-actions">
+        <button class="btn btn-secondary narrow-btn" bindtap="connectBle" disabled="{{bleConnected}}">连接蓝牙</button>
+        <button class="btn btn-outline narrow-btn" bindtap="disconnectBle" disabled="{{!bleConnected}}">断开</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">系统状态</text>
+    </view>
+    <view class="card-body">
+      <view class="status-item">
+        <text class="status-label">设备状态:</text>
+        <text class="status-value {{isConnected ? 'success' : 'error'}}">
+          {{isConnected ? '在线' : '离线'}}
+        </text>
+      </view>
+      <view class="status-item">
+        <text class="status-label">GPS状态:</text>
+        <text class="status-value {{gpsData.valid ? 'success' : 'warning'}}">
+          {{gpsData.valid ? '已定位' : '未定位'}}
+        </text>
+      </view>
+      <view class="status-item">
+        <text class="status-label">手部检测:</text>
+        <text class="status-value {{handDetected ? 'success' : 'warning'}}">
+          {{handDetected ? '检测到' : '未检测到'}}
+        </text>
+      </view>
+      <view class="status-item">
+        <text class="status-label">更新时间:</text>
+        <text class="status-value">{{updateTime || '--:--:--'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="action-buttons">
+    <button class="btn" bindtap="refreshData">刷新数据</button>
+    <button class="btn btn-secondary" bindtap="viewHistory">查看历史</button>
+    <button class="btn btn-outline" bindtap="openSettings">设置</button>
+  </view>
+</view>
