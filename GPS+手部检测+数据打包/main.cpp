@@ -24,7 +24,6 @@ void loop()
   delay(3000);
 }
 
-// ------------------- WiFi 初始化 -------------------
 void initWiFi() 
 {
   Serial.print("🔌 连接 WiFi: ");
